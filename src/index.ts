@@ -2,14 +2,37 @@
 import { intro, text, select, outro, isCancel } from '@clack/prompts';
 import chalk from 'chalk';
 import fs from 'fs-extra';
+import gradient from 'gradient-string';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+export const TITLE_TEXT = `
+    ____                   __  ___      __                   
+   / __ \\____  ____       /  |/  /___  / /_  ________  ____ 
+  / / / / __ \\/ __ \\     / /|_/ / __ \\/ __ \\/ ___/ _ \\/ __ \\
+ / /_/ / /_/ / / / /    / /  / / /_/ / / / (__  )  __/ / / /
+/_____/\\____/_/ /_/    /_/  /_/\\____/_/ /_/____/\\___/_/ /_/ 
+`;
+
+export const renderTitle = () => {
+  const gradientTheme = {
+  blue: "#add7ff",
+  cyan: "#89ddff",
+  green: "#5de4c7",
+  magenta: "#fae4fc",
+  red: "#d0679d",
+  yellow: "#fffac2",
+};
+
+  const Gradient = gradient(Object.values(gradientTheme));
+  console.log(Gradient.multiline(TITLE_TEXT));
+};
 
 console.clear();
 intro(chalk.bgBlue(' Create Mohsen App CLI '));
+  renderTitle();
 
 // Ask for project name
 const projectNameRaw = await text({

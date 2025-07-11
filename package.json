@@ -1,6 +1,6 @@
 {
   "name": "create-mohsen-app",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "index.js",
   "type": "module",
   "bin": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && cpy \"templates/**/*\" dist/templates --parents"
+"build": "tsc && cpy \"templates/**/*\" dist/templates --parents"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,7 @@
     "degit": "^2.8.4",
     "execa": "^9.6.0",
     "fs-extra": "^11.3.0",
+    "gradient-string": "^3.0.0",
     "inquirer": "^12.7.0",
     "package-json": "^10.0.1"
   },
