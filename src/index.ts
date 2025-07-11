@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 console.clear();
 renderTitle();
 
-// ========== COLLECT ALL USER INPUT ==========
+// ========== COLLECT ALL USER INPUT FIRST ==========
 
 // 1. Project name
 const projectNameRaw = await text({
@@ -21,7 +21,6 @@ const projectNameRaw = await text({
   placeholder: "my-mohsen-app",
   validate: (value) => (!value ? "Required" : undefined),
 });
-
 if (isCancel(projectNameRaw)) {
   outro("Operation cancelled.");
   process.exit(0);
@@ -41,12 +40,10 @@ if (projectNameRaw === ".") {
       { label: "No, cancel", value: "no" },
     ],
   });
-
   if (isCancel(confirm) || confirm === "no") {
     outro("Operation cancelled.");
     process.exit(0);
   }
-
   targetDir = process.cwd();
   projectName = path.basename(targetDir);
 } else {
@@ -62,7 +59,6 @@ const language = await select({
     { label: "JavaScript", value: "js" },
   ],
 });
-
 if (isCancel(language)) {
   outro("Operation cancelled.");
   process.exit(0);
@@ -76,13 +72,25 @@ const enableEslint = await select({
     { label: "No", value: "no" },
   ],
 });
-
 if (isCancel(enableEslint)) {
   outro("Operation cancelled.");
   process.exit(0);
 }
 
-// ========== CHECK TARGET DIR (NO FILESYSTEM CHANGES YET) ==========
+// 4. Turbopack
+const useTurbopack = await select({
+  message: "Use Turbopack?",
+  options: [
+    { label: "Yes", value: "yes" },
+    { label: "No", value: "no" },
+  ],
+});
+if (isCancel(useTurbopack)) {
+  outro("Operation cancelled.");
+  process.exit(0);
+}
+
+// ========== CHECK TARGET DIR BEFORE DOING FS CHANGES ==========
 if (await fs.pathExists(targetDir)) {
   const files = await fs.readdir(targetDir);
   if (files.length > 0) {
@@ -91,16 +99,16 @@ if (await fs.pathExists(targetDir)) {
   }
 }
 
-// ========== CREATE PROJECT ONLY NOW ==========
+// ========== NOW PERFORM FILESYSTEM OPERATIONS ==========
 
 // Create folder
 await fs.mkdir(targetDir, { recursive: true });
 
-// 📁 Copy base template
+// Copy base template
 const baseTemplatePath = path.join(__dirname, "templates", "base");
 await fs.copy(baseTemplatePath, targetDir);
 
-// --- Language-specific adjustments ---
+// Language-specific adjustments
 if (language === "js") {
   const jsExtrasPath = path.join(__dirname, "templates", "extra", "js");
 
@@ -126,8 +134,7 @@ if (language === "ts") {
   await fs.copy(tsExtrasPath, targetDir, { overwrite: true });
 }
 
-//! the actions file
-
+// Copy actions file
 const actionFileName = language === "ts" ? "getUsers.ts" : "getUsers.js";
 const actionSourcePath = path.join(
   __dirname,
@@ -141,7 +148,7 @@ const actionTargetPath = path.join(targetDir, "actions", actionFileName);
 
 await fs.copy(actionSourcePath, actionTargetPath);
 
-// 📝 Copy ESLint config if selected
+// Copy ESLint config if enabled
 if (enableEslint === "yes") {
   const eslintConfigPath = path.join(
     __dirname,
@@ -153,7 +160,7 @@ if (enableEslint === "yes") {
   await fs.copy(eslintConfigPath, path.join(targetDir, "eslint.config.mjs"));
 }
 
-// 🔧 Update package.json
+// Update package.json
 const pkgPath = path.join(targetDir, "package.json");
 const pkgExists = await fs.pathExists(pkgPath);
 
@@ -167,13 +174,38 @@ if (pkgExists) {
     pkg.devDependencies = {
       ...(pkg.devDependencies || {}),
       typescript: "^5.0.0",
-      "@types/react": "^18.0.0",
+      "@types/react": "^19",
       "@types/node": "^20.0.0",
+      "@types/react-dom": "^19",
     };
+
+    if (enableEslint === "yes") {
+      pkg.devDependencies = {
+        ...pkg.devDependencies,
+        eslint: "^9",
+        "eslint-config-next": "15.3.5",
+        "@eslint/eslintrc": "^3",
+      };
+    }
+
     if ("type" in pkg) delete pkg.type;
   } else if (language === "js") {
     if ("devDependencies" in pkg) delete pkg.devDependencies;
+
+    if (enableEslint === "yes") {
+      pkg.devDependencies = {
+        eslint: "^9",
+        "eslint-config-next": "15.3.5",
+        "@eslint/eslintrc": "^3",
+      };
+    }
   }
+  pkg.scripts = {
+    ...(pkg.scripts || {}),
+    dev: useTurbopack === "yes" ? "next dev --turbopack" : "next dev",
+    build: "next build",
+    start: "next start",
+  };
 
   await fs.writeJSON(pkgPath, pkg, { spaces: 2 });
 }
