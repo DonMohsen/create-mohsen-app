@@ -18,6 +18,6 @@
     "incremental": true,
     "plugins": [{ "name": "next" }]
   },
-  "include": ["src/**/*", "src/consts", "src/consts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "templates"]
 }
