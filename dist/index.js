@@ -5,16 +5,16 @@ import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
 import { renderThanks, renderTitle } from "./consts.js";
+import { spawn } from "node:child_process";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 console.clear();
-// intro(chalk.bgBlue(" Create Mohsen App CLI "));
 renderTitle();
 // ========== COLLECT ALL USER INPUT ==========
 // 1. Project name
 const projectNameRaw = await text({
-    message: "📦 App name:",
-    placeholder: "my-app",
+    message: "App name:",
+    placeholder: "my-mohsen-app",
     validate: (value) => (!value ? "Required" : undefined),
 });
 if (isCancel(projectNameRaw)) {
@@ -25,7 +25,7 @@ let targetDir;
 let projectName;
 if (projectNameRaw === ".") {
     const confirm = await select({
-        message: "⚠️  You chose the current directory. Proceed?",
+        message: "You chose the current directory. Proceed?",
         options: [
             {
                 label: "Yes, create into current directory and overwrite existing data",
@@ -47,7 +47,7 @@ else {
 }
 // 2. Language
 const language = await select({
-    message: "🧠 Language:",
+    message: "Language:",
     options: [
         { label: "TypeScript", value: "ts" },
         { label: "JavaScript", value: "js" },
@@ -59,7 +59,7 @@ if (isCancel(language)) {
 }
 // 3. ESLint
 const enableEslint = await select({
-    message: "🛠️  Do you want to enable ESLint?",
+    message: "Enable ESLint?",
     options: [
         { label: "Yes", value: "yes" },
         { label: "No", value: "no" },
@@ -98,7 +98,7 @@ if (language === "ts") {
     const tsExtrasPath = path.join(__dirname, "templates", "extra", "ts");
     await fs.copy(tsExtrasPath, targetDir, { overwrite: true });
 }
-//!the actions file
+//! the actions file
 const actionFileName = language === "ts" ? "getUsers.ts" : "getUsers.js";
 const actionSourcePath = path.join(__dirname, "templates", "extra", "actions", `action-${language}`, actionFileName);
 const actionTargetPath = path.join(targetDir, "actions", actionFileName);
@@ -110,27 +110,66 @@ if (enableEslint === "yes") {
 }
 // 🔧 Update package.json
 const pkgPath = path.join(targetDir, "package.json");
-const pkg = await fs.readJSON(pkgPath);
-pkg.name = projectName;
-pkg.description = "";
-if (language === "ts") {
-    pkg.devDependencies = {
-        typescript: "^5.0.0",
-        "@types/react": "^18.0.0",
-        "@types/node": "^20.0.0",
-    };
-    if ("type" in pkg)
-        delete pkg.type;
+const pkgExists = await fs.pathExists(pkgPath);
+if (pkgExists) {
+    const pkg = await fs.readJSON(pkgPath);
+    pkg.name = projectName;
+    pkg.description = "";
+    if (language === "ts") {
+        pkg.devDependencies = {
+            ...(pkg.devDependencies || {}),
+            typescript: "^5.0.0",
+            "@types/react": "^18.0.0",
+            "@types/node": "^20.0.0",
+        };
+        if ("type" in pkg)
+            delete pkg.type;
+    }
+    else if (language === "js") {
+        if ("devDependencies" in pkg)
+            delete pkg.devDependencies;
+    }
+    await fs.writeJSON(pkgPath, pkg, { spaces: 2 });
 }
-else if (language === "js") {
-    if ("devDependencies" in pkg)
-        delete pkg.devDependencies;
+// ========== Prompt for npm install ==========
+if (pkgExists) {
+    const installDeps = await select({
+        message: "Execute order npm install ?",
+        options: [
+            { label: "Do it", value: "yes" },
+            { label: "No", value: "no" },
+        ],
+    });
+    if (isCancel(installDeps)) {
+        outro("Operation cancelled.");
+        process.exit(0);
+    }
+    if (installDeps === "yes") {
+        console.log(chalk.cyan(`\nInstallation in progress`));
+        await runNpmInstall(targetDir);
+    }
 }
-await fs.writeJSON(pkgPath, pkg, { spaces: 2 });
-// ✅ Done!
-// outro(
-//   `✅ Project "${projectName}" created as ${
-//     language === "ts" ? "TypeScript" : "JavaScript"
-//   } project`
-// );
+else {
+    console.log(chalk.yellow(`⚠️  No package.json found in ${targetDir}. Skipping npm install.`));
+}
 renderThanks();
+// ------------------------------------------------------------
+// HELPER FUNCTION: runNpmInstall
+// ------------------------------------------------------------
+function runNpmInstall(cwd) {
+    return new Promise((resolve, reject) => {
+        const child = spawn(process.platform === "win32" ? "npm.cmd" : "npm", ["install"], {
+            cwd,
+            stdio: "inherit",
+            shell: true,
+        });
+        child.on("close", (code) => {
+            if (code === 0) {
+                resolve();
+            }
+            else {
+                reject(new Error(`npm install failed with exit code ${code}`));
+            }
+        });
+    });
+}
