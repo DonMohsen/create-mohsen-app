@@ -1,0 +1,34 @@
+{
+  "name": "create-mohsen-app",
+  "version": "1.0.2",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "create-mohsen-app": "./dist/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && cpy \"templates/**/*\" dist/templates --parents"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "chalk": "^5.4.1",
+    "clack": "^0.1.0",
+    "degit": "^2.8.4",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.3.0",
+    "inquirer": "^12.7.0",
+    "package-json": "^10.0.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^24.0.13",
+    "cpy-cli": "^5.0.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
