@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { intro, text, select, outro, isCancel } from "@clack/prompts";
+import { intro, text, select, outro, isCancel, confirm } from "@clack/prompts";
 import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
@@ -76,7 +76,24 @@ if (isCancel(styling)) {
   outro("Operation cancelled.");
   process.exit(0);
 }
-// 3. ESLint
+// 4.api routes
+const apiRouteUse = await confirm({
+  message: "Use api routes?",
+  
+});
+// 5.zustand
+const zustandUse = await select({
+  message: "Use Zustand?:",
+  options: [
+    { label: "Yes", value: "withZustand" },
+    { label: "No", value: "withoutZustand" },
+  ],
+});
+if (isCancel(zustandUse)) {
+  outro("Operation cancelled.");
+  process.exit(0);
+}
+// 5. ESLint
 const enableEslint = await select({
   message: "Enable ESLint?",
   options: [
@@ -89,7 +106,7 @@ if (isCancel(enableEslint)) {
   process.exit(0);
 }
 
-// 4. Turbopack
+// 6. Turbopack
 const useTurbopack = await select({
   message: "Use Turbopack?",
   options: [
@@ -204,6 +221,53 @@ if (styling === "css") {
     await fs.copy(srcFile, destPath, { overwrite: true });
   }
 }
+//! api routes
+if (apiRouteUse) {
+  const apiTargetDir = path.join(targetDir,"app", "api", "user");
+
+  await fs.mkdir(apiTargetDir, { recursive: true });
+
+  const routeFileName = language === "ts" ? "route.ts" : "route.js";
+
+  const routeSourcePath = path.join(
+    __dirname,
+    "templates",
+    "extra",
+    "api",
+    language,
+    routeFileName
+  );
+
+  const routeTargetPath = path.join(apiTargetDir, routeFileName);
+
+  await fs.copy(routeSourcePath, routeTargetPath);
+}
+
+//! Zustand
+
+if (zustandUse === "withZustand") {
+  const storeDir = path.join(targetDir, "store");
+
+  await fs.mkdir(storeDir, { recursive: true });
+
+  const zustandFileName = language === "ts"
+    ? "useUserStore.ts"
+    : "useUserStore.js";
+
+  const zustandSrcPath = path.join(
+    __dirname,
+    "templates",
+    "extra",
+    "zustand",
+    language,
+    zustandFileName
+  );
+
+  const zustandDestPath = path.join(storeDir, zustandFileName);
+
+  await fs.copy(zustandSrcPath, zustandDestPath);
+
+}
 
 //! Copy actions folder
 const actionFileName = language === "ts" ? "getUsers.ts" : "getUsers.js";
@@ -273,12 +337,19 @@ if (pkgExists) {
     }
   }
 
+  //!zustand logic
   // Add Tailwind dependencies if chosen
   if (styling === "tw") {
     pkg.devDependencies = {
       ...(pkg.devDependencies || {}),
       "@tailwindcss/postcss": "^4",
       "tailwindcss": "^4",
+    };
+  }
+  if (zustandUse === "withZustand") {
+    pkg.dependencies = {
+      ...(pkg.dependencies || {}),
+      zustand: "^5.0.6", // or whatever version you prefer
     };
   }
 
