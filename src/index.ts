@@ -64,6 +64,18 @@ if (isCancel(language)) {
   process.exit(0);
 }
 
+// 3. Styling
+const styling = await select({
+  message: "Styling:",
+  options: [
+    { label: "TailwindCSS", value: "tw" },
+    { label: "CSS", value: "css" },
+  ],
+});
+if (isCancel(styling)) {
+  outro("Operation cancelled.");
+  process.exit(0);
+}
 // 3. ESLint
 const enableEslint = await select({
   message: "Enable ESLint?",
@@ -115,12 +127,16 @@ if (language === "js") {
   await fs.remove(path.join(targetDir, "tsconfig.json"));
 
   await fs.copy(
-    path.join(jsExtrasPath, "layout.jsx"),
-    path.join(targetDir, "app/layout.jsx")
+    path.join(jsExtrasPath, "layout.js"),
+    path.join(targetDir, "app/layout.js")
   );
   await fs.copy(
-    path.join(jsExtrasPath, "page.jsx"),
-    path.join(targetDir, "app/page.jsx")
+    path.join(jsExtrasPath, "page.js"),
+    path.join(targetDir, "app/page.js")
+  );
+  await fs.copy(
+    path.join(jsExtrasPath, "jsconfig.json"),
+    path.join(targetDir, "jsconfig.json")
   );
 
   await Promise.all([
@@ -134,7 +150,62 @@ if (language === "ts") {
   await fs.copy(tsExtrasPath, targetDir, { overwrite: true });
 }
 
-// Copy actions file
+//! The stylings
+// ========== STYLING FILES ==========
+
+const stylingsTargetDir = path.join(targetDir, "app");
+
+let stylingTemplatePath: string;
+if (styling === "tw") {
+  stylingTemplatePath = path.join(__dirname, "templates", "extra", "tailwindcss");
+} else if (styling === "css") {
+  stylingTemplatePath = path.join(__dirname, "templates", "extra", "css");
+}
+
+// ---------- CLEAN UP OLD FILES ----------
+
+// Remove page.tsx or page.js
+if(styling==="css"){
+
+  const pageFileName = language === "ts" ? "page.tsx" : "page.js";
+  const pageFilePath = path.join(stylingsTargetDir, pageFileName);
+  if (await fs.pathExists(pageFilePath)) {
+    await fs.remove(pageFilePath);
+  }
+  
+  // Remove globals.css
+  const globalsCssPath = path.join(stylingsTargetDir, "globals.css");
+  if (await fs.pathExists(globalsCssPath)) {
+    await fs.remove(globalsCssPath);
+  }
+}
+
+// ---------- COPY NEW FILES ----------
+
+// Tailwind → copy everything
+if (styling === "tw") {
+  await fs.copy(stylingTemplatePath!, stylingsTargetDir, { overwrite: true });
+}
+
+// CSS → possibly rename .js → .tsx
+if (styling === "css") {
+  const files = await fs.readdir(stylingTemplatePath!);
+
+  for (const fileName of files) {
+    const srcFile = path.join(stylingTemplatePath!, fileName);
+
+    let destFile = fileName;
+    if (language === "ts" && fileName.endsWith(".js")) {
+      destFile = fileName.replace(/\.js$/, ".tsx");
+    }
+
+    const destPath = path.join(stylingsTargetDir, destFile);
+
+    await fs.copy(srcFile, destPath, { overwrite: true });
+  }
+}
+
+//! Copy actions folder
 const actionFileName = language === "ts" ? "getUsers.ts" : "getUsers.js";
 const actionSourcePath = path.join(
   __dirname,
@@ -189,6 +260,7 @@ if (pkgExists) {
     }
 
     if ("type" in pkg) delete pkg.type;
+
   } else if (language === "js") {
     if ("devDependencies" in pkg) delete pkg.devDependencies;
 
@@ -200,6 +272,16 @@ if (pkgExists) {
       };
     }
   }
+
+  // Add Tailwind dependencies if chosen
+  if (styling === "tw") {
+    pkg.devDependencies = {
+      ...(pkg.devDependencies || {}),
+      "@tailwindcss/postcss": "^4",
+      "tailwindcss": "^4",
+    };
+  }
+
   pkg.scripts = {
     ...(pkg.scripts || {}),
     dev: useTurbopack === "yes" ? "next dev --turbopack" : "next dev",

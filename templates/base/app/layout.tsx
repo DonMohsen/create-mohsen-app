@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import "../styles/globals.css";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Create Don Mohsen App",
-  description: "Enjoy the flexibility of Don Mohsen Cli",
+  title: "Create Mohsen App",
+  description: "Enjoy the flexibility of Create Mohsen App cli",
   robots: "index, follow",
 };
 
