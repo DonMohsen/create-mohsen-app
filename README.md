@@ -58,7 +58,7 @@ This is **NOT** an all-inclusive template. I just made the template for you to h
 To scaffold an app using `create-mohsen-app`:
 
 ```bash
-npx create t3-app@latest
+npx create-mohsen-app@latest
 ```
 
 <h2 id="other-works">Other works done by Mohsen</h2>
@@ -66,7 +66,7 @@ npx create t3-app@latest
 - [Supercell Games Stats](https://clash-mohsen.vercel.app)
 - [react-luxham](https://www.npmjs.com/package/react-luxham)
 - [Twitter Clone](https://mohsen-twitter.vercel.app)
-- [Fullstack Portfolio Website](https://donmohsen.ir)
+- [Fullstack Portfolio Website](https://github.com/donmohsen/portfolio)
 
 [downloads-image]: https://img.shields.io/npm/dm/create-mohsen-app?color=364fc7&logoColor=364fc7
 [npm-url]: https://www.npmjs.com/package/create-mohsen-app

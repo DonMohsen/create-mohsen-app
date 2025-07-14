@@ -1,6 +1,6 @@
 {
   "name": "create-mohsen-app",
-  "version": "4.1.1",
+  "version": "4.1.3",
   "main": "index.js",
   "type": "module",
   "bin": {
